@@ -1,48 +1,86 @@
+#include <stdarg.h>
 #include "main.h"
-#include <string.h>
+#include <stddef.h>
 
 /**
- * _printf - produces output according to a format
- * @format: input
- *
- * Return: number of characters printed excluding the null byte used
+ * get_op - select function for conversion char
+ * @c: char to check
+ * Return: pointer to function
  */
+
+int (*get_op(const char c))(va_list)
+{
+	int i = 0;
+
+	flags_p fp[] = {
+		{"c", print_char},
+		{"s", print_str},
+		{"i", print_nbr},
+		{"d", print_nbr},
+		{"b", print_binary},
+		{"o", print_octal},
+		{"x", print_hexa_lower},
+		{"X", print_hexa_upper},
+		{"u", print_unsigned},
+		{"S", print_str_unprintable},
+		{"r", print_str_reverse},
+		{"p", print_ptr},
+		{"R", print_rot13},
+		{"%", print_percent}
+	};
+	while (i < 14)
+	{
+		if (c == fp[i].c[0])
+		{
+			return (fp[i].f);
+		}
+		i++;
+	}
+	return (NULL);
+}
+
+/**
+ * _printf - Reproduce behavior of printf function
+ * @format: format string
+ * Return: value of printed chars
+ */
+
 int _printf(const char *format, ...)
 {
-	int (*pfunc)(va_list, flags_t *);
 	va_list ap;
-	const char *p;
-	flags_t flags = {0, 0, 0};
+	int sum = 0, i = 0;
+	int (*func)();
 
-	register int count = 0;
-
+	if (!format || (format[0] == '%' && format[1] == '\0'))
+		return (-1);
 	va_start(ap, format);
-	if (!format || (format[0] == '%' && !format[1]))
-		return (-1);
-	if (format[0] == '%' && format[1] == ' ' && !format[2])
-		return (-1);
 
-	for (p = format; *p; p++)
+	while (format[i])
 	{
-		if (*p == '%')
+		if (format[i] == '%')
 		{
-			p++;
-			if (*p == '%');
+			if (format[i + 1] != '\0')
+				func = get_op(format[i + 1]);
+			if (func == NULL)
 			{
-				count += _putchar (*p);
+				_putchar(format[i]);
+				sum++;
+				i++;
+			}
+			else
+			{
+				sum += func(ap);
+				i += 2;
 				continue;
 			}
-			while (get_flag(*p, &flags))
-				p++;
-			pfunc = get_print(*p);
-			count += (pfunc)
-				? pfunc(ap, &flags)
-				: _printf("%%%c", *p);
 		}
 		else
-			count += _putchar(*p);
+		{
+			_putchar(format[i]);
+			sum++;
+			i++;
+		}
 	}
-	_putchar(-1);
 	va_end(ap);
-	return (count);
+	return (sum);
 }
